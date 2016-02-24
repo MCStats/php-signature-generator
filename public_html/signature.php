@@ -20,7 +20,7 @@ header('Content-type: image/png');
 
 // TODO testing vars
 $_GET['plugin'] = 'LWC';
-$_GET['graph'] = 'Locale';
+$_GET['graph'] = 'Java Version';
 
 $graphBorders = GRAPH_BORDERS_FULL;
 
@@ -90,7 +90,6 @@ if ($graph->type == GraphType::Pie) {
     }
 
     $graphData = $graphData[0]->data;
-
     $totalSum = 0;
 
     foreach ($graphData as $data) {
@@ -113,20 +112,37 @@ if ($graph->type == GraphType::Pie) {
     $values = array();
     $labels = array();
 
-    $combinedValues = array();
+    if (count($graphData) == 0) {
+        error_image('No data');
+    }
 
-    $graphData = DataGenerator::generateCustomChartData($graph, -1, HOURS);
-    arsort($graphData);
+    $graphData = $graphData[0]->data;
+    $totalSum = 0;
+    $mergedSums = array();
 
-    foreach ($graphData as $innerName => $data) {
-        $total = 0;
+    foreach ($graphData as $data) {
+        $totalSum += $data->sum;
+    }
 
-        foreach ($data as $v) {
-            $total += $v['y'];
+    foreach ($graphData as $data) {
+        $columnName = $data->name;
+        $value = $data->sum;
+
+        $split = explode($MCSTATS_DONUT_INNER_SEPARATOR, $columnName);
+        $outerColumnName = $split[0];
+
+        if (!array_key_exists($outerColumnName, $mergedSums)) {
+            $mergedSums[$outerColumnName] = 0;
         }
 
-        $labels[] = str_replace('<br/>', ' ', $innerName) . ': ' . $total . '%';
-        $values[] = $total;
+        $mergedSums[$outerColumnName] += $value;
+    }
+
+    foreach ($mergedSums as $outerColumnName => $sum) {
+        $percent = round($sum / $totalSum, 4) * 100;
+
+        $labels[] = $outerColumnName . ': ' . $percent . '%';
+        $values[] = $percent;
     }
 
     $dataSet->addPoints($values, 'Values');

@@ -1,6 +1,7 @@
 <?php
 
 $BASE_API_URL = 'https://staging.api.mcstats.org/v2';
+$MCSTATS_DONUT_INNER_SEPARATOR = '~=~';
 
 /**
  * Loads the json object for a plugin
