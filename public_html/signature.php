@@ -18,6 +18,10 @@ define('IMAGE_WIDTH', 625); // 478
 header('Access-Control-Allow-Origin: *');
 header('Content-type: image/png');
 
+// TODO testing vars
+$_GET['plugin'] = 'LWC';
+$_GET['graph'] = 'Global Statistics';
+
 $graphBorders = GRAPH_BORDERS_FULL;
 
 if (isset($_GET['borders'])) {
@@ -77,105 +81,102 @@ $legendLength = 0;
 // TODO HOURS setting
 $graphData = loadPluginGraphDataJson($plugin->id, $graph->id, HOURS);
 
-if (count($graphData) == 0) {
-    error_image('No data available');
-}
+if (count($graphData) > 0) {
+    if ($graph->type == GraphType::Pie) {
+        $values = array();
+        $labels = array();
 
-if ($graph->type == GraphType::Pie) {
-    $values = array();
-    $labels = array();
+        $graphData = $graphData[0]->data;
+        $totalSum = 0;
 
-    $graphData = $graphData[0]->data;
-    $totalSum = 0;
-
-    foreach ($graphData as $data) {
-        $totalSum += $data->sum;
-    }
-
-    foreach ($graphData as $data) {
-        $columnName = $data->name;
-        $value = $data->sum;
-        $percent = round($value / $totalSum, 4) * 100;
-
-        $labels[] = $columnName . ': ' . $percent . '%';
-        $values[] = $percent;
-    }
-
-    $dataSet->addPoints($values, 'Values');
-    $dataSet->addPoints($labels, 'Labels');
-    $dataSet->setAbscissa('Labels');
-} elseif ($graph->type == GraphType::Donut) {
-    $values = array();
-    $labels = array();
-
-    $graphData = $graphData[0]->data;
-    $totalSum = 0;
-    $mergedSums = array();
-
-    foreach ($graphData as $data) {
-        $totalSum += $data->sum;
-    }
-
-    foreach ($graphData as $data) {
-        $columnName = $data->name;
-        $value = $data->sum;
-
-        $split = explode($MCSTATS_DONUT_INNER_SEPARATOR, $columnName);
-        $outerColumnName = $split[0];
-
-        if (!array_key_exists($outerColumnName, $mergedSums)) {
-            $mergedSums[$outerColumnName] = 0;
+        foreach ($graphData as $data) {
+            $totalSum += $data->sum;
         }
 
-        $mergedSums[$outerColumnName] += $value;
-    }
-
-    foreach ($mergedSums as $outerColumnName => $sum) {
-        $percent = round($sum / $totalSum, 4) * 100;
-
-        $labels[] = $outerColumnName . ': ' . $percent . '%';
-        $values[] = $percent;
-    }
-
-    $dataSet->addPoints($values, 'Values');
-    $dataSet->addPoints($labels, 'Labels');
-    $dataSet->setAbscissa('Labels');
-} else {
-    $timestamps = array();
-    $columnData = array();
-
-    foreach ($graphData as $entry) {
-        $epoch = $entry->epoch;
-
-        foreach ($entry->data as $data) {
+        foreach ($graphData as $data) {
             $columnName = $data->name;
-            $sum = $data->sum;
+            $value = $data->sum;
+            $percent = round($value / $totalSum, 4) * 100;
 
-            if (!array_key_exists($columnName, $columnData)) {
-                $columnData[$columnName] = array();
+            $labels[] = $columnName . ': ' . $percent . '%';
+            $values[] = $percent;
+        }
+
+        $dataSet->addPoints($values, 'Values');
+        $dataSet->addPoints($labels, 'Labels');
+        $dataSet->setAbscissa('Labels');
+    } elseif ($graph->type == GraphType::Donut) {
+        $values = array();
+        $labels = array();
+
+        $graphData = $graphData[0]->data;
+        $totalSum = 0;
+        $mergedSums = array();
+
+        foreach ($graphData as $data) {
+            $totalSum += $data->sum;
+        }
+
+        foreach ($graphData as $data) {
+            $columnName = $data->name;
+            $value = $data->sum;
+
+            $split = explode($MCSTATS_DONUT_INNER_SEPARATOR, $columnName);
+            $outerColumnName = $split[0];
+
+            if (!array_key_exists($outerColumnName, $mergedSums)) {
+                $mergedSums[$outerColumnName] = 0;
             }
 
-            $columnData[$columnName][] = $sum;
+            $mergedSums[$outerColumnName] += $value;
         }
 
-        $timestamps[] = $epoch;
-    }
+        foreach ($mergedSums as $outerColumnName => $sum) {
+            $percent = round($sum / $totalSum, 4) * 100;
 
-    foreach ($columnData as $columnName => $data) {
-        $dataSet->addPoints($data, $columnName);
-    }
+            $labels[] = $outerColumnName . ': ' . $percent . '%';
+            $values[] = $percent;
+        }
 
-    $dataSet->addPoints($timestamps, 'Timestamps');
-    $dataSet->setAbscissa('Timestamps');
-    $dataSet->setXAxisDisplay(AXIS_FORMAT_CUSTOM, 'XAxisFormat');
+        $dataSet->addPoints($values, 'Values');
+        $dataSet->addPoints($labels, 'Labels');
+        $dataSet->setAbscissa('Labels');
+    } else {
+        $timestamps = array();
+        $columnData = array();
+
+        foreach ($graphData as $entry) {
+            $epoch = $entry->epoch;
+
+            foreach ($entry->data as $data) {
+                $columnName = $data->name;
+                $sum = $data->sum;
+
+                if (!array_key_exists($columnName, $columnData)) {
+                    $columnData[$columnName] = array();
+                }
+
+                $columnData[$columnName][] = $sum;
+            }
+
+            $timestamps[] = $epoch;
+        }
+
+        foreach ($columnData as $columnName => $data) {
+            $dataSet->addPoints($data, $columnName);
+        }
+
+        $dataSet->addPoints($timestamps, 'Timestamps');
+        $dataSet->setAbscissa('Timestamps');
+        $dataSet->setXAxisDisplay(AXIS_FORMAT_CUSTOM, 'XAxisFormat');
+    }
 }
 
 $legendXOffset = 50 + intval($legendLength * 2);
 
 $dataSet->loadPalette('../fonts/palette.txt', true);
 
-function XAxisFormat($value)
-{
+function XAxisFormat($value) {
     return gmdate('Y-m-d', $value);
 }
 
@@ -190,22 +191,37 @@ if ($graphBorders == GRAPH_BORDERS_FULL) {
 
 $graphImage->Antialias = true;
 
-if ($graph->type == GraphType::Pie || $graph->type == GraphType::Donut) {
-    require ROOT . '../app/pChart/pPie.class.php';
-    $pie = new pPie($graphImage, $dataSet);
-    $pie->draw2DPie(REAL_IMAGE_WIDTH / 2, REAL_IMAGE_HEIGHT / 2 + 10, array('Radius' => 60 * $scale, 'DrawLabels' => false, 'LabelStacked' => true, 'Border' => true, 'SecondPass' => true, 'LabelColor' => PIE_LABEL_COLOR_AUTO));
-    $pie->drawPieLegend(8, 12, array('Style' => LEGEND_NOBORDER, 'FontName' => '../fonts/Segoe_UI.ttf', 'FontSize' => max(6, 6 * $scale * 0.5), 'BoxSize' => 5 * $scale));
-} else { // area / line
-    $scaleSettings = array('RemoveXAxis' => false, 'LabelSkip' => 50, 'Mode' => SCALE_MODE_START0, 'XMargin' => 5, 'YMargin' => 5, 'Floating' => true, 'GridR' => 200, 'GridG' => 200, 'GridB' => 200, 'DrawSubTicks' => true, 'CycleBackground' => true);
-    $graphImage->drawScale($scaleSettings);
-    $graphImage->drawLegend($graphBorders == GRAPH_BORDERS_FULL ? 10 : 50, 10, array('FontSize' => max(6, 6 * $scale * 0.3), 'BoxWidth' => max(5, 5 * $scale * 0.3), 'BoxHeight' => max(5, 5 * $scale * 0.3), 'Style' => LEGEND_NOBORDER, 'Mode' => LEGEND_HORIZONTAL));
+if (count($graphData) == 0) {
+    $graphImage->drawText(REAL_IMAGE_WIDTH / 2, REAL_IMAGE_HEIGHT / 2, 'NO DATA AVAILABLE', array(
+        'FontName' => '../fonts/OpenSans-Regular.ttf',
+        'FontSize' => max(20, 20 * $scale * 0.5),
+        'Align' => TEXT_ALIGN_TOPMIDDLE,
+        'Alpha' => 30,
+        'BoxR' => 255,
+        'BoxG' => 255,
+        'BoxB' => 255,
+        'DrawBox' => true,
+        'BoxAlpha' => 100,
+        'BorderOffset' => -2
+    ));
+} else {
+    if ($graph->type == GraphType::Pie || $graph->type == GraphType::Donut) {
+        require ROOT . '../app/pChart/pPie.class.php';
+        $pie = new pPie($graphImage, $dataSet);
+        $pie->draw2DPie(REAL_IMAGE_WIDTH / 2, REAL_IMAGE_HEIGHT / 2 + 10, array('Radius' => 60 * $scale, 'DrawLabels' => false, 'LabelStacked' => true, 'Border' => true, 'SecondPass' => true, 'LabelColor' => PIE_LABEL_COLOR_AUTO));
+        $pie->drawPieLegend(8, 12, array('Style' => LEGEND_NOBORDER, 'FontName' => '../fonts/Segoe_UI.ttf', 'FontSize' => max(6, 6 * $scale * 0.5), 'BoxSize' => 5 * $scale));
+    } else { // area / line
+        $scaleSettings = array('RemoveXAxis' => false, 'LabelSkip' => 50, 'Mode' => SCALE_MODE_START0, 'XMargin' => 5, 'YMargin' => 5, 'Floating' => true, 'GridR' => 200, 'GridG' => 200, 'GridB' => 200, 'DrawSubTicks' => true, 'CycleBackground' => true);
+        $graphImage->drawScale($scaleSettings);
+        $graphImage->drawLegend($graphBorders == GRAPH_BORDERS_FULL ? 10 : 50, 10, array('FontSize' => max(6, 6 * $scale * 0.3), 'BoxWidth' => max(5, 5 * $scale * 0.3), 'BoxHeight' => max(5, 5 * $scale * 0.3), 'Style' => LEGEND_NOBORDER, 'Mode' => LEGEND_HORIZONTAL));
 
-    if ($graph->type == GraphType::Line) {
-        $graphImage->drawLineChart();
-    } elseif ($graph->type == GraphType::Area) {
-        $graphImage->drawAreaChart();
-    } else {
-        error_image('unsupported graph type');
+        if ($graph->type == GraphType::Line) {
+            $graphImage->drawLineChart();
+        } elseif ($graph->type == GraphType::Area) {
+            $graphImage->drawAreaChart();
+        } else {
+            error_image('unsupported graph type');
+        }
     }
 }
 
