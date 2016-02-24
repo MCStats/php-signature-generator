@@ -18,10 +18,6 @@ define('IMAGE_WIDTH', 625); // 478
 header('Access-Control-Allow-Origin: *');
 header('Content-type: image/png');
 
-// TODO testing vars
-$_GET['plugin'] = 'LWC';
-$_GET['graph'] = 'Java Version';
-
 $graphBorders = GRAPH_BORDERS_FULL;
 
 if (isset($_GET['borders'])) {
@@ -79,15 +75,15 @@ if ($graph->type == GraphType::Percentage_Area) {
 $legendLength = 0;
 
 // TODO HOURS setting
-$graphData = loadPluginGraphDataJson($plugin->id, $graph->id);
+$graphData = loadPluginGraphDataJson($plugin->id, $graph->id, HOURS);
+
+if (count($graphData) == 0) {
+    error_image('No data available');
+}
 
 if ($graph->type == GraphType::Pie) {
     $values = array();
     $labels = array();
-
-    if (count($graphData) == 0) {
-        error_image('No data');
-    }
 
     $graphData = $graphData[0]->data;
     $totalSum = 0;
@@ -111,10 +107,6 @@ if ($graph->type == GraphType::Pie) {
 } elseif ($graph->type == GraphType::Donut) {
     $values = array();
     $labels = array();
-
-    if (count($graphData) == 0) {
-        error_image('No data');
-    }
 
     $graphData = $graphData[0]->data;
     $totalSum = 0;
@@ -150,28 +142,27 @@ if ($graph->type == GraphType::Pie) {
     $dataSet->setAbscissa('Labels');
 } else {
     $timestamps = array();
-    $columnNames = array();
     $columnData = array();
 
-    foreach ($graph->getColumns() as $id => $name) {
-        $legendLength += strlen($name);
+    foreach ($graphData as $entry) {
+        $epoch = $entry->epoch;
 
-        foreach (DataGenerator::generateCustomChartData($graph, $id, HOURS) as $data) {
-            $epoch = $data[0];
-            $value = $data[1];
-            $epochSeconds = intval($epoch / 1000);
+        foreach ($entry->data as $data) {
+            $columnName = $data->name;
+            $sum = $data->sum;
 
-            $columnNames[$id] = $name;
-            $columnData[$id][] = $value;
-
-            if (count($timestamps) == 0 || ($epochSeconds > $timestamps[count($timestamps) - 1] && !in_array($epochSeconds, $timestamps))) {
-                $timestamps[] = $epochSeconds;
+            if (!array_key_exists($columnName, $columnData)) {
+                $columnData[$columnName] = array();
             }
+
+            $columnData[$columnName][] = $sum;
         }
+
+        $timestamps[] = $epoch;
     }
 
-    foreach ($columnNames as $id => $name) {
-        $dataSet->addPoints($columnData[$id], $name);
+    foreach ($columnData as $columnName => $data) {
+        $dataSet->addPoints($data, $columnName);
     }
 
     $dataSet->addPoints($timestamps, 'Timestamps');

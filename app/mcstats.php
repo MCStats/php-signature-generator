@@ -37,12 +37,13 @@ function loadPluginGraphJson($pluginId, $graphName) {
  *
  * @param $pluginId
  * @param $graphId
+ * @param $hours The number of hours to load data for
  * @return mixed
  */
-function loadPluginGraphDataJson($pluginId, $graphId) {
+function loadPluginGraphDataJson($pluginId, $graphId, $hours = 744) {
     global $BASE_API_URL;
 
-    $url = $BASE_API_URL . '/plugin/' . $pluginId . '/graph/' . $graphId . '/data';
+    $url = $BASE_API_URL . '/plugin/' . $pluginId . '/graph/' . $graphId . '/data?hours=' . $hours;
     $data = file_get_contents($url);
     return json_decode($data)->data;
 }
