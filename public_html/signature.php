@@ -18,10 +18,6 @@ define('IMAGE_WIDTH', 625); // 478
 header('Access-Control-Allow-Origin: *');
 header('Content-type: image/png');
 
-// TODO testing vars
-$_GET['plugin'] = 'LWC';
-$_GET['graph'] = 'Global Statistics';
-
 $graphBorders = GRAPH_BORDERS_FULL;
 
 if (isset($_GET['borders'])) {
@@ -174,7 +170,7 @@ if (count($graphData) > 0) {
 
 $legendXOffset = 50 + intval($legendLength * 2);
 
-$dataSet->loadPalette('../fonts/palette.txt', true);
+$dataSet->loadPalette('../fonts/pChart-palette.txt', true);
 
 function XAxisFormat($value) {
     return gmdate('Y-m-d', $value);
@@ -182,7 +178,10 @@ function XAxisFormat($value) {
 
 $graphImage = new pImage(REAL_IMAGE_WIDTH, REAL_IMAGE_HEIGHT, $dataSet);
 
-$graphImage->setFontProperties(array('FontName' => '../fonts/pf_arma_five.ttf', 'FontSize' => 6));
+$graphImage->setFontProperties(array(
+    'FontName' => '../fonts/OpenSans-Regular.ttf',
+    'FontSize' => 6
+));
 $graphImage->setGraphArea(40, $graphBorders == GRAPH_BORDERS_FULL ? 20 : 0, REAL_IMAGE_WIDTH + 6, REAL_IMAGE_HEIGHT - 15);
 
 if ($graphBorders == GRAPH_BORDERS_FULL) {
@@ -207,13 +206,46 @@ if (count($graphData) == 0) {
 } else {
     if ($graph->type == GraphType::Pie || $graph->type == GraphType::Donut) {
         require ROOT . '../app/pChart/pPie.class.php';
+
         $pie = new pPie($graphImage, $dataSet);
-        $pie->draw2DPie(REAL_IMAGE_WIDTH / 2, REAL_IMAGE_HEIGHT / 2 + 10, array('Radius' => 60 * $scale, 'DrawLabels' => false, 'LabelStacked' => true, 'Border' => true, 'SecondPass' => true, 'LabelColor' => PIE_LABEL_COLOR_AUTO));
-        $pie->drawPieLegend(8, 12, array('Style' => LEGEND_NOBORDER, 'FontName' => '../fonts/Segoe_UI.ttf', 'FontSize' => max(6, 6 * $scale * 0.5), 'BoxSize' => 5 * $scale));
+
+        $pie->draw2DPie(REAL_IMAGE_WIDTH / 2, REAL_IMAGE_HEIGHT / 2 + 10, array(
+            'Radius' => 60 * $scale,
+            'DrawLabels' => false,
+            'LabelStacked' => true,
+            'Border' => true,
+            'SecondPass' => true,
+            'LabelColor' => PIE_LABEL_COLOR_AUTO
+        ));
+
+        $pie->drawPieLegend(8, 12, array(
+            'Style' => LEGEND_NOBORDER,
+            'FontName' => '../fonts/OpenSans-Regular.ttf',
+            'FontSize' => max(6, 6 * $scale * 0.5),
+            'BoxSize' => 5 * $scale
+        ));
     } else { // area / line
-        $scaleSettings = array('RemoveXAxis' => false, 'LabelSkip' => 50, 'Mode' => SCALE_MODE_START0, 'XMargin' => 5, 'YMargin' => 5, 'Floating' => true, 'GridR' => 200, 'GridG' => 200, 'GridB' => 200, 'DrawSubTicks' => true, 'CycleBackground' => true);
+        $scaleSettings = array('RemoveXAxis' => false,
+            'LabelSkip' => 50,
+            'Mode' => SCALE_MODE_START0,
+            'XMargin' => 5,
+            'YMargin' => 5,
+            'Floating' => true,
+            'GridR' => 200,
+            'GridG' => 200,
+            'GridB' => 200,
+            'DrawSubTicks' => true,
+            'CycleBackground' => true
+        );
+
         $graphImage->drawScale($scaleSettings);
-        $graphImage->drawLegend($graphBorders == GRAPH_BORDERS_FULL ? 10 : 50, 10, array('FontSize' => max(6, 6 * $scale * 0.3), 'BoxWidth' => max(5, 5 * $scale * 0.3), 'BoxHeight' => max(5, 5 * $scale * 0.3), 'Style' => LEGEND_NOBORDER, 'Mode' => LEGEND_HORIZONTAL));
+        $graphImage->drawLegend($graphBorders == GRAPH_BORDERS_FULL ? 10 : 50, 10, array(
+            'FontSize' => max(6, 6 * $scale * 0.3),
+            'BoxWidth' => max(5, 5 * $scale * 0.3),
+            'BoxHeight' => max(5, 5 * $scale * 0.3),
+            'Style' => LEGEND_NOBORDER,
+            'Mode' => LEGEND_HORIZONTAL
+        ));
 
         if ($graph->type == GraphType::Line) {
             $graphImage->drawLineChart();
@@ -226,7 +258,11 @@ if (count($graphData) == 0) {
 }
 
 if ($graph->type == GraphType::Pie || $graph->type == GraphType::Donut || $graphBorders == GRAPH_BORDERS_FULL) {
-    $graphImage->drawText(REAL_IMAGE_WIDTH / 2, max(5, 5 * $scale), $graph->display_name, array('FontName' => '../fonts/Forgotte.ttf', 'FontSize' => max(20, 20 * $scale * 0.5), 'Align' => TEXT_ALIGN_TOPMIDDLE, 'BoxR' => 255, 'BoxG' => 255, 'BoxB' => 255, 'DrawBox' => true, 'BoxAlpha' => 100, 'BorderOffset' => -2));
+    $graphImage->drawText(REAL_IMAGE_WIDTH / 2, max(5, 5 * $scale), $graph->display_name, array(
+        'FontName' => '../fonts/OpenSans-Regular.ttf',
+        'FontSize' => max(15, 15 * $scale * 0.5),
+        'Align' => TEXT_ALIGN_TOPMIDDLE
+    ));
 }
 
 // Authors
@@ -242,14 +278,26 @@ if (!empty($authors)) {
 
 // Watermark
 if ($graph->type == GraphType::Pie || $graph->type == GraphType::Donut) {
-    $graphImage->drawText(REAL_IMAGE_WIDTH, REAL_IMAGE_HEIGHT - 2, 'mcstats.org' . $title, array('FontName' => '../fonts/pf_arma_five.ttf', 'R' => 177, 'G' => 177, 'B' => 177, 'Alpha' => 25, 'FontSize' => max(12, 12 * $scale * 0.5), 'Align' => TEXT_ALIGN_BOTTOMRIGHT));
+    $graphImage->drawText(REAL_IMAGE_WIDTH - 5, REAL_IMAGE_HEIGHT - 2, 'mcstats.org' . $title, array(
+        'FontName' => '../fonts/OpenSans-Regular.ttf',
+        'R' => 177,
+        'G' => 177,
+        'B' => 177,
+        'Alpha' => 25,
+        'FontSize' => max(12, 12 * $scale * 0.5),
+        'Align' => TEXT_ALIGN_BOTTOMRIGHT
+    ));
 } else {
-    $graphImage->drawText(REAL_IMAGE_WIDTH, 5, 'mcstats.org' . $title, array('FontName' => '../fonts/pf_arma_five.ttf', 'R' => 177, 'G' => 177, 'B' => 177, 'Alpha' => 25, 'FontSize' => max(12, 12 * $scale * 0.5), 'Align' => TEXT_ALIGN_TOPRIGHT));
+    $graphImage->drawText(REAL_IMAGE_WIDTH - 5, 5, 'mcstats.org' . $title, array(
+        'FontName' => '../fonts/OpenSans-Regular.ttf',
+        'R' => 177,
+        'G' => 177,
+        'B' => 177,
+        'Alpha' => 25,
+        'FontSize' => max(12, 12 * $scale * 0.5),
+        'Align' => TEXT_ALIGN_TOPRIGHT
+    ));
 }
-
-$tahoma = 'tahoma.ttf';
-$bounding_box = imagettfbbox(11, 0, $tahoma, $title);
-$center_x = ceil((REAL_IMAGE_WIDTH - $bounding_box[2]) / 2);
 
 $graphImage->stroke();
 
@@ -270,20 +318,15 @@ imagedestroy($image);
  * @param $text
  */
 function error_image($text) {
-    // allocate image
     $image = imagecreatetruecolor(REAL_IMAGE_WIDTH, REAL_IMAGE_HEIGHT);
 
-    // create some colours
     $white = imagecolorallocate($image, 255, 255, 255);
     $black = imagecolorallocate($image, 0, 0, 0);
 
-    // draw teh background
     imagefilledrectangle($image, 0, 0, REAL_IMAGE_WIDTH, REAL_IMAGE_HEIGHT, $white);
 
-    // write the text
-    imagettftext($image, 16, 0, 5, 25, $black, '../fonts/pf_arma_five.ttf', $text);
+    imagettftext($image, 16, 0, 5, 25, $black, '../fonts/OpenSans-Regular.ttf', $text);
 
-    // render and destroy the image
     imagepng($image);
     imagedestroy($image);
     exit;
